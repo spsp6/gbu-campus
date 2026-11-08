@@ -42,6 +42,25 @@ The original development checkout uses a junction to local Three.js/Vite depende
 
 The Git repository includes `tour/`, `night/`, `shared/`, source assets, build/server tools and written evidence. Generated `dist/` and `release/`, dependencies, local `Old/` snapshots, screenshots, recordings and raw QA results are excluded. Evidence documents describe historical runs; their local capture paths are not included in this source repository.
 
+## Shrub collision contribution
+
+Low green shrubs now register rotation-aware bounding boxes in the shared collision map,
+so day and night players cannot walk through their solid footprint. Their seeded placement
+and appearance are unchanged, and the existing route, station and track checks remain clear.
+The boxes conservatively approximate the foliage; neighbouring shrubs may form a combined
+barrier. This does not add collisions to flat lawns or individual leaves, and does not change
+the fictional Listener's ability to phase through obstacles.
+
+Run the AI-assisted regression checks from the repository root:
+
+```sh
+node --test tools/shrub-collision.test.mjs
+```
+
+These checks cover shared colliders, accessible approach blocking, isolated-shrub perimeter
+movement and route clearance. They do not replace a personal browser playtest or establish
+that the entire night game can still be completed. Rebuild and restart after source changes.
+
 ## GitHub Pages hosting
 
 Production hosting is **GitHub Pages**, at https://greenquark.github.io/world/; night mode is at https://greenquark.github.io/world/night/.
