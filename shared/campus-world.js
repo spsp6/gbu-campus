@@ -330,9 +330,16 @@ export function build(scene, renderer, {night = false, onProgress = () => {}} = 
   for(let i=0;i<18;i++){const a=i*2.4,r=Math.sqrt(rng())*.85,x=islandX+Math.cos(a)*rx*r,z=islandZ+Math.sin(a)*rz*r;tree(x,z,3.8+rng()*1.6,hillY(x,z));}
   for(const x of [16,33])for(let z=-16;z<=18;z+=8.5)if(!nearRoute(x,z,3)&&!blocked(x,z,1))palm(x,z,8.5+rng());
   for(const [x,z] of [[-104,-8],[-102,38],[-84,39],[-67,39],[-50,40],[-8,38],[56,32],[71,32],[82,32],[134,3],[133,-11],[48,-30]])if(!nearRoute(x,z,3)&&!blocked(x,z,2))tree(x,z,7+rng()*2);
+  const shrubObstacles=[];
   for(let i=0;i<90;i++){
     const x=-133+rng()*270,z=-48+rng()*94;if(nearRoute(x,z,3)||blocked(x,z,3)||(x>110&&z>27))continue;
-    mesh(new THREE.IcosahedronGeometry(1,1),m.leaf,[x,.45,z],[0,rng()*TAU,0],[1.6,.6,1.0]);
+    const yaw=rng()*TAU;
+    mesh(new THREE.IcosahedronGeometry(1,1),m.leaf,[x,.45,z],[0,yaw,0],[1.6,.6,1.0]);
+    // Project the rotated foliage ellipsoid onto X/Z for the shared AABB collision map.
+    // Player movement already expands each collider by the player's radius.
+    const halfX=Math.hypot(1.6*Math.cos(yaw),Math.sin(yaw));
+    const halfZ=Math.hypot(1.6*Math.sin(yaw),Math.cos(yaw));
+    shrubObstacles.push([x,z,halfX*2,halfZ*2,'shrub']);
   }
   // Bench, lighting and sign kit: all furniture sits beside the walking lanes.
   for(const [x,z] of [[-30,24],[-69,21],[47,34],[93,-15],[116,22],[46,-29]]){
@@ -360,6 +367,8 @@ export function build(scene, renderer, {night = false, onProgress = () => {}} = 
     const geometry=mergeGeometries(list,false);if(!geometry)throw new Error('Failed to merge '+material.name);geometry.computeBoundingSphere();
     const object=new THREE.Mesh(geometry,material);object.name=material.name+' · campus batch';object.receiveShadow=true;object.castShadow=false;root.add(object);triangles+=geometry.attributes.position.count/3;list.forEach(g=>g.dispose());
   }
+  // Register after placement so solid shrubs do not change seeded scenery or furniture layout.
+  for(const args of shrubObstacles)obstacle(...args);
   // Validate the geometric contract at build time without silently cutting holes into solids.
   const routeConflicts=[];let routeSamples=0;
   for(const [ri,route] of CAMPUS.paths.entries())for(let i=1;i<route.length;i++){
